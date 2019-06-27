@@ -233,7 +233,18 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             }
             $uinfo['user'] = $user;
             $uinfo['name'] = $sinfo['name'];
-            $uinfo['grps'] = array_merge((array) $uinfo['grps'], $sinfo['grps']);
+            /*
+			//Remove previous values
+			foreach($sinfo['grps'] as $group) {
+				if($this->startsWith('eve-',$group)) {
+					$idx = array_search($group, $groups);
+					if($idx !== false) unset($groups[$idx]);
+				}
+			}
+             * 
+             */
+            $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
+			$this->modifyUser($user, array('grps' => $uinfo['grps'])); //Update, in case something changed
         } elseif(actionOK('register') || $this->getConf('register-on-auth')) {
             $ok = $this->addUser($uinfo, $servicename);
             if(!$ok) {
@@ -247,7 +258,15 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         return true;
     }
 
-    /**
+    /*
+	private function startsWith($haystack, $needle) {
+		$length = strlen($needle);
+		return (substr($haystack, 0, $length) === $needle);
+	}
+     * 
+     */
+
+	/**
      * new user, create him - making sure the login is unique by adding a number if needed
      *
      * @param array $uinfo user info received from the oAuth service
@@ -275,7 +294,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
 
         $ok = $this->triggerUserMod(
             'create',
-            array($user, auth_pwgen($user), $uinfo['name'], $uinfo['mail'], $groups_on_creation,)
+            array($user, auth_pwgen($user), $uinfo['name'], $uinfo['mail'], $uinfo['grps'],)
         );
         if(!$ok) {
             return false;

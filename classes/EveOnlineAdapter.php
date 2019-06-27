@@ -28,6 +28,7 @@ class EveOnlineAdapter extends AbstractAdapter {
      */
     public function getUser() {
         $JSON = new \JSON(JSON_LOOSE_TYPE);
+        $http = new \DokuHTTPClient();
         $data = array();
 
         /** var OAuth\OAuth2\Service\Generic $this->oAuth */
@@ -36,6 +37,51 @@ class EveOnlineAdapter extends AbstractAdapter {
         $data['user'] = $result['CharacterName'];
         $data['name'] = $result['CharacterName'];
         $data['mail'] = $result['CharacterID'].'@eveonline.com';
+
+        /*
+        if (!isset($result['CharacterID'])) {
+            return $data;
+        }
+         */
+
+        $affiliation = '['.$result['CharacterID'].']';
+        dbglog('affiliation');
+        dbglog($affiliation);
+
+        $result = $JSON->decode($http->post('https://esi.evetech.net/latest/characters/affiliation/?datasource=tranquility', $affiliation));
+
+        dbglog('affiliation result');
+        dbglog($result);
+
+        $ids = array();
+        foreach ($result as $entry){
+            if (isset($entry['alliance_id'])) {
+                $ids[] = $entry['alliance_id'];
+            }
+            if (isset($entry['faction_id'])) {
+                $ids[] = $entry['faction_id'];
+            }
+            $ids[] = $entry['corporation_id'];
+        }
+
+        $result = $JSON->decode($http->post('https://esi.evetech.net/latest/universe/names/?datasource=tranquility', '['.implode(",",$ids).']'));
+        dbglog('affiliation names');
+        dbglog($result);
+
+        foreach ($result as $entry){
+            dbglog($entry);
+            $name = strtolower(str_replace(" ", "_", $entry['name']));
+            $name = str_replace(".", "-", $name);
+            $category = $entry['category'];
+            if ($category == 'corporation') {
+                $data['grps'][] = 'eve-corp-'.$name;
+            } elseif ($category == 'alliance') {
+                $data['grps'][] = 'eve-alliance-'.$name;
+            } elseif ($category == 'corporation') {
+                $data['grps'][] = 'evefaction-'.$name;
+            }
+        }
+
         return $data;
     }
 
