@@ -44,7 +44,7 @@ It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before 
 1. Go to `Admin` > `User Manager`
 1. Click the eve character you want for the admin account
 1. Add the group `admin` and click `Save Changes`
-1. Logout and login with your new eve online admin account
+1. Logout and login with your EVESSO admin account
 1. Go to `Admin` > `Configuration Settings`
 1. go to `Evesso` > `singleService` and select `EveOnline`  
 :warning:  
