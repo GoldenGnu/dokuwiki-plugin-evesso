@@ -233,7 +233,6 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             }
             $uinfo['user'] = $user;
             $uinfo['name'] = $sinfo['name'];
-            /*
 			//Remove previous values
 			foreach($sinfo['grps'] as $group) {
 				if($this->startsWith('eve-',$group)) {
@@ -241,8 +240,6 @@ class auth_plugin_evesso extends auth_plugin_authplain {
 					if($idx !== false) unset($groups[$idx]);
 				}
 			}
-             * 
-             */
             $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
 			$this->modifyUser($user, array('grps' => $uinfo['grps'])); //Update, in case something changed
         } elseif(actionOK('register') || $this->getConf('register-on-auth')) {
@@ -258,13 +255,10 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         return true;
     }
 
-    /*
-	private function startsWith($haystack, $needle) {
-		$length = strlen($needle);
-		return (substr($haystack, 0, $length) === $needle);
-	}
-     * 
-     */
+    private function startsWith($haystack, $needle) {
+        $length = strlen($needle);
+        return (substr($haystack, 0, $length) === $needle);
+    }
 
 	/**
      * new user, create him - making sure the login is unique by adding a number if needed
