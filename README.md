@@ -31,5 +31,5 @@ Eve Online SSO login plugin for DokuWiki
 1. Change the groups to `admin,user,eveonline` and click `Save Changes`
 1. Logout and login with your new eve online admin account
 1. Go to `Admin` > `Configuration Settings`
-1. go to `Evesso` > `singleService` select EveOnline* :warning: This step can lock you out of the wiki. Make sure you're logged in on a eve-online admin account before you continue and have a up-to-date backup of the wiki!
+1. go to `Evesso` > `singleService` select `EveOnline` :warning: This step can lock you out of the wiki. Make sure you're logged in on a eve-online admin account before you continue and have a up-to-date backup of the wiki!
 1. Save settings 
