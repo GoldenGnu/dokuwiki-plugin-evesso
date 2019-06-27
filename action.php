@@ -39,10 +39,10 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
      * @return void
      */
     public function handle_start(Doku_Event &$event, $param) {
-		global $ID;
-		if (isset($_SESSION[DOKU_COOKIE]['oauth-logout'])){
+        global $ID;
+        if (isset($_SESSION[DOKU_COOKIE]['oauth-logout'])){
             unset($_SESSION[DOKU_COOKIE]['oauth-logout']);
-			send_redirect(wl($ID));
+            send_redirect(wl($ID));
             return;
         }
         if (isset($_SESSION[DOKU_COOKIE]['oauth-done']['do']) || !empty($_SESSION[DOKU_COOKIE]['oauth-done']['rev'])){
@@ -239,13 +239,13 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
         global $lang;
         global $ID;
 
-		$singleService = $this->getConf('singleService');
+        $singleService = $this->getConf('singleService');
 
-		if($event->data == 'logout' && $singleService != '') {
-			session_start();
-			$_SESSION[DOKU_COOKIE]['oauth-logout'] = 'logout';
-			session_write_close();
-		}
+        if($event->data == 'logout' && $singleService != '') {
+            session_start();
+            $_SESSION[DOKU_COOKIE]['oauth-logout'] = 'logout';
+            session_write_close();
+        }
 
         if ($singleService == '') return true;
 

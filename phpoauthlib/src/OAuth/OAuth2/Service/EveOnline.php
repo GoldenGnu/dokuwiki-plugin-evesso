@@ -22,7 +22,7 @@ use OAuth\OAuth2\Token\StdOAuth2Token;
 class EveOnline extends AbstractService
 {
 
-	const SCOPE_PUBLIC_DATA = 'publicData';
+    const SCOPE_PUBLIC_DATA = 'publicData';
 
     public function __construct(
         CredentialsInterface $credentials,

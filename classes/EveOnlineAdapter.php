@@ -83,15 +83,15 @@ class EveOnlineAdapter extends AbstractAdapter {
         return $data;
     }
 
-	public function getScope() {
+    public function getScope() {
         return array(EveOnline::SCOPE_PUBLIC_DATA);
     }
 
-	public function login() {
-		$parameters = array();
-		$parameters['state'] = urlencode(base64_encode(json_encode(array('state' => md5(rand())))));
-		$this->storage->storeAuthorizationState('EveOnline', $parameters['state']);
-		$url = $this->oAuth->getAuthorizationUri($parameters);
-		send_redirect($url);
-	}
+    public function login() {
+        $parameters = array();
+        $parameters['state'] = urlencode(base64_encode(json_encode(array('state' => md5(rand())))));
+        $this->storage->storeAuthorizationState('EveOnline', $parameters['state']);
+        $url = $this->oAuth->getAuthorizationUri($parameters);
+        send_redirect($url);
+    }
 }
