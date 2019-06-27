@@ -38,11 +38,9 @@ class EveOnlineAdapter extends AbstractAdapter {
         $data['name'] = $result['CharacterName'];
         $data['mail'] = $result['CharacterID'].'@eveonline.com';
 
-        /*
         if (!isset($result['CharacterID'])) {
             return $data;
         }
-         */
 
         $affiliation = '['.$result['CharacterID'].']';
         dbglog('affiliation');
