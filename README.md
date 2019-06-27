@@ -4,7 +4,7 @@ Eve Online SSO login plugin for DokuWiki
 ## Lisence
 [GNU General Public License v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
-Original code from: [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) and [PHPoAuthLib](https://github.com/Lusitanian/PHPoAuthLib)
+Original code from [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) and [PHPoAuthLib](https://github.com/Lusitanian/PHPoAuthLib)
 
 ## Setup
 
