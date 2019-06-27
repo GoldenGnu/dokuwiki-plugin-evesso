@@ -32,7 +32,9 @@ Original code from: [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) 
 
 #### Disable login with email (Optional)
 
-:warning: This have the potential you permantly lock you out of the wiki. It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before you continue. 
+:warning:  
+This have the potential you permantly lock you out of the wiki.  
+It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before you continue. 
 
 1. Open the wiki in your browser
 1. Logout *(if you're currently logged in)*
@@ -45,5 +47,6 @@ Original code from: [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) 
 1. Logout and login with your new eve online admin account
 1. Go to `Admin` > `Configuration Settings`
 1. go to `Evesso` > `singleService` and select `EveOnline`  
-:warning: This step can lock you out of the wiki. Make sure you're logged in on a EVESSO admin account and have a up-to-date backup of the wiki before you continue
+:warning:  
+This step can lock you out of the wiki. Make sure you're logged in on a EVESSO admin account and have a up-to-date backup of the wiki before you continue
 1. Save settings 
