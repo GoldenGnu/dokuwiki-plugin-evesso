@@ -1,4 +1,4 @@
-# EVESSO Plugin for DokuWiki
+# EveSSO Plugin for DokuWiki
 
 [EveSSO on DokuWiki.org](https://www.dokuwiki.org/plugin:evesso)
 
@@ -37,17 +37,17 @@ It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before 
 
 1. Open the wiki in your browser
 1. Logout *(if you're currently logged in)*
-1. Login via EVESSO on the character you want to be admin
+1. Login via EveSSO on the character you want to be admin
 1. Logout
 1. Login on a admin account
 1. Go to `Admin` > `User Manager`
 1. Click the eve character you want for the admin account
 1. Add the group `admin` and click `Save Changes`
-1. Logout and login with your EVESSO admin account
+1. Logout and login with your EveSSO admin account
 1. Go to `Admin` > `Configuration Settings`
 1. go to `Evesso` > `singleService` and select `EveOnline`  
 :warning:  
-This step can lock you out of the wiki. Make sure you're logged in on a EVESSO admin account and have a up-to-date backup of the wiki before you continue
+This step can lock you out of the wiki. Make sure you're logged in on a EveSSO admin account and have a up-to-date backup of the wiki before you continue
 1. Save settings 
 
 ## Access Control
