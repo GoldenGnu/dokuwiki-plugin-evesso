@@ -235,9 +235,9 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             $uinfo['name'] = $sinfo['name'];
             //Remove previous values
             foreach($sinfo['grps'] as $group) {
-                if($this->startsWith('eve-',$group)) {
-                    $idx = array_search($group, $groups);
-                    if($idx !== false) unset($groups[$idx]);
+                if($this->startsWith($group, 'eve-')) {
+                    $idx = array_search($group, $sinfo['grps']);
+                    if($idx !== false) unset($sinfo['grps'][$idx]);
                 }
             }
             $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
