@@ -52,7 +52,7 @@ This step can lock you out of the wiki. Make sure you're logged in on a EVESSO a
 
 ## Access Control
 
-EVESSO user have auth groups for corporation, alliance *(if in alliance)*, and faction *(if in faction warfare)*
+EVESSO users have auth groups for corporation, alliance *(if in alliance)*, and faction *(if in faction warfare)*
 * eve-corp-*corporation_name*
 * eve-alliance-*alliance_name*
 * eve-faction-*faction_name*
