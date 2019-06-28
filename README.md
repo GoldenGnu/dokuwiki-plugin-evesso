@@ -1,14 +1,12 @@
 # EVESSO Plugin for DokuWiki
 
-## Lisence
-[GNU General Public License v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
+## Installation
 
-Original code from [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) and [PHPoAuthLib](https://github.com/Lusitanian/PHPoAuthLib)
+Search and install the plugin using the [Plugin Manager](https://www.dokuwiki.org/plugin:plugin). Refer to [Plugins](https://www.dokuwiki.org/plugins) on how to install plugins manually.
 
-## Setup
+## Configuration
 
-#### Required Setup Steps
-1. Put the plugin files in `/lib/plugins/evesso`
+#### Required Steps
 1. Open the wiki in your browser
 1. Login on a admin account
 1. Go to `admin` > `Configuration Settings`
@@ -60,3 +58,8 @@ EVESSO users have auth groups for corporation, alliance *(if in alliance)*, and 
 Note: Do not create your own auth groups starting with `eve-` when using this plugin.
 
 You can change the acccess control for each auth group in `admin` > `Access Control List Management`
+
+## Lisence
+[GNU General Public License v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
+
+Original code from [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) and [PHPoAuthLib](https://github.com/Lusitanian/PHPoAuthLib)
