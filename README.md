@@ -1,5 +1,4 @@
-# dokuwiki-plugin-evesso
-Eve Online SSO login plugin for DokuWiki 
+# EVESSO Plugin for DokuWiki
 
 ## Lisence
 [GNU General Public License v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
@@ -33,7 +32,7 @@ Original code from [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) a
 #### Disable login with email (Optional)
 
 :warning:  
-This have the potential you permantly lock you out of the wiki.  
+This have the potential to permantly lock you out of the wiki.  
 It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before you continue. 
 
 1. Open the wiki in your browser
@@ -50,3 +49,14 @@ It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before 
 :warning:  
 This step can lock you out of the wiki. Make sure you're logged in on a EVESSO admin account and have a up-to-date backup of the wiki before you continue
 1. Save settings 
+
+## Access Control
+
+EVESSO users have auth groups for corporation, alliance *(if in alliance)*, and faction *(if in faction warfare)*
+* eve-corp-*corporation_name*
+* eve-alliance-*alliance_name*
+* eve-faction-*faction_name*
+
+Note: Do not create your own auth groups starting with `eve-` when using this plugin.
+
+You can change the acccess control for each auth group in `admin` > `Access Control List Management`
