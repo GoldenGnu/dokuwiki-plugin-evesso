@@ -32,7 +32,7 @@ Original code from [OAuth](https://github.com/cosmocode/dokuwiki-plugin-oauth) a
 #### Disable login with email (Optional)
 
 :warning:  
-This have the potential you permantly lock you out of the wiki.  
+This have the potential to you permantly lock you out of the wiki.  
 It is a good idea [backup the wiki](https://www.dokuwiki.org/faq:backup) before you continue. 
 
 1. Open the wiki in your browser
