@@ -3,5 +3,5 @@ author GoldenGnu
 email  niklaskr@gmail.com
 date   2019-06-28
 name   EveSSO
-desc   Eve Online SSO login plugin
+desc   Authentication via eve online SSO and access control for corporations/alliances/factions
 url    http://www.dokuwiki.org/plugin:evesso
