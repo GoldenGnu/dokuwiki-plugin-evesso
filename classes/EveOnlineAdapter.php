@@ -63,7 +63,6 @@ class EveOnlineAdapter extends AbstractAdapter {
         if ($post === false) {
             return $data;
         }
-        dbglog($post);
         $result = $JSON->decode($post);
 
         foreach ($result as $entry) {
