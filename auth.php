@@ -233,15 +233,18 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             }
             $uinfo['user'] = $user;
             $uinfo['name'] = $sinfo['name'];
-            //Remove previous values
-            foreach($sinfo['grps'] as $group) {
-                if($this->startsWith($group, 'eve-')) {
-                    $idx = array_search($group, $sinfo['grps']);
-                    if($idx !== false) unset($sinfo['grps'][$idx]);
+            if ($this->haveEveGroups($uinfo['grps'])) { //Update groups
+                foreach($sinfo['grps'] as $group) {
+                    if($this->startsWith($group, 'eve-')) {
+                        $idx = array_search($group, $sinfo['grps']);
+                        if($idx !== false) unset($sinfo['grps'][$idx]);
+                    }
                 }
+                $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
+                $this->modifyUser($user, array('grps' => $uinfo['grps'])); //Update groups
+            } else { //Load groups
+                $uinfo['grps'] = $sinfo['grps'];
             }
-            $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
-            $this->modifyUser($user, array('grps' => $uinfo['grps'])); //Update, in case something changed
         } elseif(actionOK('register') || $this->getConf('register-on-auth')) {
             $ok = $this->addUser($uinfo, $servicename);
             if(!$ok) {
@@ -253,6 +256,15 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             return false;
         }
         return true;
+    }
+
+    private function haveEveGroups($groups) {
+        foreach($groups as $group) {
+            if($this->startsWith($group, 'eve-')) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function startsWith($haystack, $needle) {
