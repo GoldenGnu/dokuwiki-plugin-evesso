@@ -1,5 +1,7 @@
 # EVESSO Plugin for DokuWiki
 
+[EveSSO on DokuWiki.org](https://www.dokuwiki.org/plugin:evesso)
+
 ## Installation
 
 Search and install the plugin using the [Plugin Manager](https://www.dokuwiki.org/plugin:plugin). Refer to [Plugins](https://www.dokuwiki.org/plugins) on how to install plugins manually.
