@@ -1,6 +1,6 @@
 # EveSSO Plugin for DokuWiki
 
-Authentication via eve online SSO and access control for corporations/alliances/factions
+DokuWiki authentication via eve online SSO and access control for corporations/alliances/factions
 
 [EveSSO on DokuWiki.org](https://www.dokuwiki.org/plugin:evesso)
 
