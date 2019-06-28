@@ -57,6 +57,6 @@ EVESSO users have auth groups for corporation, alliance *(if in alliance)*, and 
 * eve-alliance-*alliance_name*
 * eve-faction-*faction_name*
 
-Note: Avoid creating your own auth groups starting with `eve-` when using this plugin.
+Note: Do not create your own auth groups starting with `eve-` when using this plugin.
 
 You can change the acccess control for each auth group in `admin` > `Access Control List Management`
