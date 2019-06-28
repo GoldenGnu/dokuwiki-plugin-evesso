@@ -36,23 +36,20 @@ class EveOnlineAdapter extends AbstractAdapter {
 
         $data['user'] = $result['CharacterName'];
         $data['name'] = $result['CharacterName'];
-        $data['mail'] = $result['CharacterID'].'@eveonline.com';
+        $data['mail'] = $result['CharacterID'] . '@eveonline.com';
 
         if (!isset($result['CharacterID'])) {
             return $data;
         }
 
-        $affiliation = '['.$result['CharacterID'].']';
-        dbglog('affiliation');
-        dbglog($affiliation);
-
-        $result = $JSON->decode($http->post('https://esi.evetech.net/latest/characters/affiliation/?datasource=tranquility', $affiliation));
-
-        dbglog('affiliation result');
-        dbglog($result);
+        $post = $http->post('https://esi.evetech.net/latest/characters/affiliation/?datasource=tranquility', '[' . $result['CharacterID'] . ']');
+        if ($post === false) {
+            return $data;
+        }
+        $result = $JSON->decode($post);
 
         $ids = array();
-        foreach ($result as $entry){
+        foreach ($result as $entry) {
             if (isset($entry['alliance_id'])) {
                 $ids[] = $entry['alliance_id'];
             }
@@ -62,21 +59,24 @@ class EveOnlineAdapter extends AbstractAdapter {
             $ids[] = $entry['corporation_id'];
         }
 
-        $result = $JSON->decode($http->post('https://esi.evetech.net/latest/universe/names/?datasource=tranquility', '['.implode(",",$ids).']'));
-        dbglog('affiliation names');
-        dbglog($result);
+        $post = $http->post('https://esi.evetech.net/latest/universe/names/?datasource=tranquility', '[' . implode(",", $ids) . ']');
+        if ($post === false) {
+            return $data;
+        }
+        dbglog($post);
+        $result = $JSON->decode($post);
 
-        foreach ($result as $entry){
+        foreach ($result as $entry) {
             dbglog($entry);
             $name = strtolower(str_replace(" ", "_", $entry['name']));
             $name = str_replace(".", "-", $name);
             $category = $entry['category'];
             if ($category == 'corporation') {
-                $data['grps'][] = 'eve-corp-'.$name;
+                $data['grps'][] = 'eve-corp-' . $name;
             } elseif ($category == 'alliance') {
-                $data['grps'][] = 'eve-alliance-'.$name;
+                $data['grps'][] = 'eve-alliance-' . $name;
             } elseif ($category == 'corporation') {
-                $data['grps'][] = 'evefaction-'.$name;
+                $data['grps'][] = 'evefaction-' . $name;
             }
         }
 
