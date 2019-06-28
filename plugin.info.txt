@@ -1,7 +1,7 @@
 base   evesso
 author GoldenGnu
 email  niklaskr@gmail.com
-date   2019-05-15
+date   2019-06-28
 name   EveSSO
 desc   Eve Online SSO login plugin
 url    http://www.dokuwiki.org/plugin:evesso
