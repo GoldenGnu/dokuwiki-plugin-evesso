@@ -4,8 +4,7 @@ namespace OAuth\Plugin;
 
 use OAuth\Common\Consumer\Credentials;
 use OAuth\Common\Http\Exception\TokenResponseException;
-use OAuth\Common\Service\AbstractService;
-use OAuth\Common\Storage\Session;
+use OAuth\Common\Storage\Exception\TokenNotFoundException;
 use OAuth\ServiceFactory;
 
 /**
@@ -58,7 +57,9 @@ abstract class AbstractAdapter {
      * @return bool
      */
     public function isInitialized() {
-        if(is_null($this->oAuth)) return false;
+        if(is_null($this->oAuth)) {
+            return false;
+        }
         return true;
     }
 
@@ -86,45 +87,32 @@ abstract class AbstractAdapter {
     }
 
     /**
-     * Request access token
+     * Clear storage token for user
      *
-     * This is the second step of oAuth authentication
+     */
+    public function logout() {
+        if ($this->isInitialized()) {
+            $this->oAuth->getStorage()->clearToken($this->oAuth->service());
+        }
+    }
+
+    /**
+     * Check access_token
      *
-     * This implementation tries to abstract away differences between oAuth1 and oAuth2,
-     * but might need to be overwritten for specific services
+     * Update as needed
      *
-     * @return bool
+     * @return bool true if access_token is valid. false otherwise
      */
     public function checkToken() {
-        global $INPUT, $conf;
+        global $INPUT;
 
-        if(is_a($this->oAuth, 'OAuth\OAuth2\Service\AbstractService')) { /* oAuth2 handling */
-
-            if(!$INPUT->get->has('code')) return false;
-            $state = $INPUT->get->str('state', null);
-
-            try {
-                $this->oAuth->requestAccessToken($INPUT->get->str('code'), $state);
-            } catch (TokenResponseException $e) {
-                msg($e->getMessage(), -1);
-                if($conf['allowdebug']) msg('<pre>'.hsc($e->getTraceAsString()).'</pre>', -1);
+        if ($INPUT->get->has('code')) {
+            if (!$this->requestAccessToken()) { //Request access token (Second step of oAuth authentication)
                 return false;
             }
-        } else { /* oAuth1 handling */
-
-            if(!$INPUT->get->has('oauth_token')) return false;
-
-            $token = $this->storage->retrieveAccessToken($this->getServiceName());
-
-            // This was a callback request from BitBucket, get the token
-            try {
-                $this->oAuth->requestAccessToken(
-                    $INPUT->get->str('oauth_token'),
-                    $INPUT->get->str('oauth_verifier'),
-                    $token->getRequestTokenSecret()
-                );
-            } catch (TokenResponseException $e) {
-                msg($e->getMessage(), -1);
+        } else {
+            //Check if access token is still valid, if not, refresh the access_token
+            if (!$this->checkAccessToken() && !$this->refreshAccessToken()) {
                 return false;
             }
         }
@@ -140,7 +128,70 @@ abstract class AbstractAdapter {
         return true;
     }
 
+    /**
+     * Request access token
+     * 
+     * Second step of oAuth authentication
+     * 
+     * @global type $INPUT
+     * @global \OAuth\Plugin\type $conf
+     * @return boolean true if successful. false otherwise
+     */
+    private function requestAccessToken() {
+        global $INPUT, $conf;
 
+        try {
+            $this->oAuth->requestAccessToken($INPUT->get->str('code'), $INPUT->get->str('state', null));
+            return true;
+        } catch (TokenResponseException $e) {
+            msg($e->getMessage(), -1);
+            if ($conf['allowdebug']) {
+                msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Check if access token is still valid
+     * 
+     * @global type $conf
+     * @return boolean true if access_token is vaild. false otherwise
+     */
+    private function checkAccessToken() {
+        global $conf;
+        try {
+            if ($this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service())->getEndOfLife() - 90 > time()) {
+                return true; // access_token is still vaild - already validated
+            }
+        } catch (TokenNotFoundException $e) {
+            msg($e->getMessage(), -1);
+            if ($conf['allowdebug']) {
+                msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
+            }
+            return false; // oAuth storage have no token
+        }
+    }
+
+    /**
+     * Refresh access_token (from refresh_token)
+     * 
+     * @global \OAuth\Plugin\type $conf
+     * @return boolean true if successful. false otherwise
+     */
+    private function refreshAccessToken() {
+        global $conf;
+        try {
+            $this->oAuth->refreshAccessToken($this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service()));
+            return true;
+        } catch (TokenNotFoundException | TokenResponseException $e) {
+            msg($e->getMessage(), -1);
+            if ($conf['allowdebug']) {
+                msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
+            }
+            return false;
+        }
+    }
 
     /**
      * Return the name of the oAuth service class to use
