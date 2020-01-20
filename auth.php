@@ -259,6 +259,9 @@ class auth_plugin_evesso extends auth_plugin_authplain {
     }
 
     private function haveEveGroups($groups) {
+        if (!isset($groups)) {
+            return false;
+        }
         foreach($groups as $group) {
             if($this->startsWith($group, 'eve-')) {
                 return true;
