@@ -142,6 +142,7 @@ abstract class AbstractAdapter {
 
         try {
             $this->oAuth->requestAccessToken($INPUT->get->str('code'), $INPUT->get->str('state', null));
+            $this->oAuth->getStorage()->clearAuthorizationState($this->oAuth->service());
             return true;
         } catch (TokenResponseException $e) {
             msg($e->getMessage(), -1);

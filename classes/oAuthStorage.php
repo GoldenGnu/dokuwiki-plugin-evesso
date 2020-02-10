@@ -20,7 +20,7 @@ class oAuthStorage implements TokenStorageInterface {
      * @return string
      */
     protected function getServiceFile($service) {
-        return getCacheName($service, '.oauth');
+        return getCacheName(session_id(), '.oauth');
     }
 
     /**
@@ -46,7 +46,11 @@ class oAuthStorage implements TokenStorageInterface {
      */
     protected function saveServiceFile($service, $data) {
         $file = $this->getServiceFile($service);
-        io_saveFile($file, serialize($data));
+        if (empty($data)) {
+            @unlink($file);
+        } else {
+            io_saveFile($file, serialize($data));
+        }
     }
 
     /**
