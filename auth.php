@@ -322,7 +322,12 @@ class auth_plugin_evesso extends auth_plugin_authplain {
      * @return bool|string
      */
     protected function getUserByEmail($mail) {
-        if($this->users === null) $this->_loadUserData();
+        if (method_exists($this, "loadUserData")) {
+            if($this->users === null) $this->loadUserData();
+        } else {
+            if($this->users === null) $this->_loadUserData();
+        }
+        
         $mail = strtolower($mail);
 
         foreach($this->users as $user => $uinfo) {

@@ -66,7 +66,6 @@ class EveOnlineAdapter extends AbstractAdapter {
         $result = $JSON->decode($post);
 
         foreach ($result as $entry) {
-            dbglog($entry);
             $name = strtolower(str_replace(" ", "_", $entry['name']));
             $name = str_replace(".", "-", $name);
             $category = $entry['category'];
