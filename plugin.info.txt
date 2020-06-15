@@ -1,7 +1,7 @@
 base   evesso
 author GoldenGnu
 email  niklaskr@gmail.com
-date   2020-02-10
+date   2020-06-15
 name   EveSSO
 desc   Authentication via eve online SSO and access control for corporations/alliances/factions
 url    http://www.dokuwiki.org/plugin:evesso
