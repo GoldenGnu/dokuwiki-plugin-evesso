@@ -27,12 +27,11 @@ class EveOnlineAdapter extends AbstractAdapter {
      * @return array
      */
     public function getUser() {
-        $JSON = new \JSON(JSON_LOOSE_TYPE);
         $http = new \DokuHTTPClient();
         $data = array();
 
         /** var OAuth\OAuth2\Service\Generic $this->oAuth */
-        $result = $JSON->decode($this->oAuth->request('/oauth/verify'));
+        $result = json_decode($this->oAuth->request('/oauth/verify'), true);
 
         $data['user'] = $result['CharacterName'];
         $data['name'] = $result['CharacterName'];
@@ -42,14 +41,15 @@ class EveOnlineAdapter extends AbstractAdapter {
             return $data;
         }
 
-        $post = $http->post('https://esi.evetech.net/latest/characters/affiliation/?datasource=tranquility', '[' . $result['CharacterID'] . ']');
-        if ($post === false) {
+        //Get character corporation, alliance, and faction
+        $affiliation_post = $http->post('https://esi.evetech.net/latest/characters/affiliation/?datasource=tranquility', '[' . $result['CharacterID'] . ']');
+        if ($affiliation_post === false) {
             return $data;
         }
-        $result = $JSON->decode($post);
+        $affiliation_result = json_decode($affiliation_post, true);
 
         $ids = array();
-        foreach ($result as $entry) {
+        foreach ($affiliation_result as $entry) {
             if (isset($entry['alliance_id'])) {
                 $ids[] = $entry['alliance_id'];
             }
@@ -59,15 +59,14 @@ class EveOnlineAdapter extends AbstractAdapter {
             $ids[] = $entry['corporation_id'];
         }
 
-        $post = $http->post('https://esi.evetech.net/latest/universe/names/?datasource=tranquility', '[' . implode(",", $ids) . ']');
-        if ($post === false) {
+        $names_post = $http->post('https://esi.evetech.net/latest/universe/names/?datasource=tranquility', '[' . implode(",", $ids) . ']');
+        if ($names_post === false) {
             return $data;
         }
-        $result = $JSON->decode($post);
+        $names_result = json_decode($names_post, true);
 
-        foreach ($result as $entry) {
-            $name = strtolower(str_replace(" ", "_", $entry['name']));
-            $name = str_replace(".", "-", $name);
+        foreach ($names_result as $entry) {
+            $name = strtolower(str_replace(" ", "_", str_replace(".", "-", $entry['name'])));
             $category = $entry['category'];
             if ($category == 'corporation') {
                 $data['grps'][] = 'eve-corp-' . $name;
