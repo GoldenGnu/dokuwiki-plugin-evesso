@@ -73,8 +73,8 @@ class EveOnlineAdapter extends AbstractAdapter {
                 $data['grps'][] = 'eve-corp-' . $name;
             } elseif ($category == 'alliance') {
                 $data['grps'][] = 'eve-alliance-' . $name;
-            } elseif ($category == 'corporation') {
-                $data['grps'][] = 'evefaction-' . $name;
+            } elseif ($category == 'faction') {
+                $data['grps'][] = 'eve-faction-' . $name;
             }
         }
 
