@@ -154,39 +154,43 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
 
         /** @var helper_plugin_evesso $hlp */
         $hlp = plugin_load('helper', 'evesso');
-
+        
         /** @var Doku_Form $form */
         $form =& $event->data;
-        if(is_a($form, \dokuwiki\Form\Form::class)) {
-            $pos  = $form->findPositionByAttribute('type', 'submit');
-        } else {
-            $pos  = $form->findElementByAttribute('type', 'submit');
+        if (!in_array('eveonline', $USERINFO['grps'])) {
+            return; //Continue as normal
         }
-
-        $services = $hlp->listServices();
-        if(!$services) return;
-
-        $this->insertElement($form, $pos, form_closefieldset());
-        $this->insertElement($form, ++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
-        foreach($services as $service) {
-            $group = $auth->cleanGroup($service);
-            $elem  = form_makeCheckboxField(
-                'oauth_group['.$group.']',
-                1, $service, '', 'simple',
-                array(
-                    'checked' => (in_array($group, $USERINFO['grps'])) ? 'checked' : ''
-                )
-            );
-            $this->insertElement($form, ++$pos, $elem);
+        if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
+            //Disable fields
+            $disable = array('fullname');
+            foreach ($disable as $dis) { //Disable
+                $pos = $form->findPositionByAttribute('name', $dis);
+                $form->getElementAt($pos)->attr('disabled', 'disabled');
+                $form->removeElement(++$pos);
+            }
+            //Remove fields
+            $remove = array('email', 'newpass', 'passchk');
+            foreach ($remove as $dis) {
+                $pos = $form->findPositionByAttribute('name', $dis);
+                $form-> removeElement($pos);
+                $form-> removeElement($pos++);
+            }
+            //Remove buttons
+            $remove = array('submit', 'reset');
+            foreach ($remove as $dis) {
+                $pos = $form->findPositionByAttribute('type', $dis);
+                $form-> removeElement($pos);
+            }
+        } else { //Hogfather and earlier
+             array_splice($form->_content, 3); //Remove everything except Username and Real name
+             $form->getElementAt(3)['disabled'] = 'disabled'; //Disable: Real name
         }
-        $this->insertElement($form, ++$pos, form_closefieldset());
-        $this->insertElement($form, ++$pos, form_openfieldset(array()));
     }
 
     private function insertElement($form, $pos, $out) {
-        if(is_a($form, \dokuwiki\Form\Form::class)) {
+        if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
             $form->addHtml($out, $pos);
-        } else {
+        } else { //Hogfather and earlier
             $form->insertElement($pos, $out);
         }
     }
@@ -229,13 +233,13 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
                 msg($this->getLang('wrongConfig'),-1);
                 return;
             }
-            $form->_content = array();
+            $form->_content = array(); //Ignore by Igor and later
             $html = $this->service_html($singleService);
 
         }
-        if(is_a($form, \dokuwiki\Form\Form::class)) {
+        if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
             $pos  = $form->elementCount(); //At the end
-        } else {
+        } else { //Hogfather and earlier
             $pos  =  count($form->_content);
         }
         $this->insertElement($form, ++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
