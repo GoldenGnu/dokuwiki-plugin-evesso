@@ -26,6 +26,8 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
         $controller->register_hook('DOKUWIKI_STARTED', 'BEFORE', $this, 'handle_start');
         $controller->register_hook('HTML_LOGINFORM_OUTPUT', 'BEFORE', $this, 'handle_loginform');
         $controller->register_hook('HTML_UPDATEPROFILEFORM_OUTPUT', 'BEFORE', $this, 'handle_profileform');
+        $controller->register_hook('FORM_LOGIN_OUTPUT', 'BEFORE', $this, 'handle_loginform');
+        $controller->register_hook('FORM_UPDATEPROFILE_OUTPUT', 'BEFORE', $this, 'handle_profileform');
         $controller->register_hook('AUTH_USER_CHANGE', 'BEFORE', $this, 'handle_usermod');
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_dologin');
     }
@@ -155,13 +157,17 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
 
         /** @var Doku_Form $form */
         $form =& $event->data;
-        $pos  = $form->findElementByAttribute('type', 'submit');
+        if(is_a($form, \dokuwiki\Form\Form::class)) {
+            $pos  = $form->findPositionByAttribute('type', 'submit');
+        } else {
+            $pos  = $form->findElementByAttribute('type', 'submit');
+        }
 
         $services = $hlp->listServices();
         if(!$services) return;
 
-        $form->insertElement($pos, form_closefieldset());
-        $form->insertElement(++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
+        $this->insertElement($form, $pos, form_closefieldset());
+        $this->insertElement($form, ++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
         foreach($services as $service) {
             $group = $auth->cleanGroup($service);
             $elem  = form_makeCheckboxField(
@@ -171,11 +177,18 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
                     'checked' => (in_array($group, $USERINFO['grps'])) ? 'checked' : ''
                 )
             );
-
-            $form->insertElement(++$pos, $elem);
+            $this->insertElement($form, ++$pos, $elem);
         }
-        $form->insertElement(++$pos, form_closefieldset());
-        $form->insertElement(++$pos, form_openfieldset(array()));
+        $this->insertElement($form, ++$pos, form_closefieldset());
+        $this->insertElement($form, ++$pos, form_openfieldset(array()));
+    }
+
+    private function insertElement($form, $pos, $out) {
+        if(is_a($form, \dokuwiki\Form\Form::class)) {
+            $form->addHtml($out, $pos);
+        } else {
+            $form->insertElement($pos, $out);
+        }
     }
 
     /**
@@ -220,9 +233,14 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
             $html = $this->service_html($singleService);
 
         }
-        $form->_content[] = form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso'));
-        $form->_content[] = $html;
-        $form->_content[] = form_closefieldset();
+        if(is_a($form, \dokuwiki\Form\Form::class)) {
+            $pos  = $form->elementCount(); //At the end
+        } else {
+            $pos  =  count($form->_content);
+        }
+        $this->insertElement($form, ++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
+        $this->insertElement($form, ++$pos, $html);
+        $this->insertElement($form, ++$pos, form_closefieldset());
     }
 
     function service_html ($service){
