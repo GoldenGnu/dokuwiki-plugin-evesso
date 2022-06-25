@@ -14,3 +14,4 @@ $lang['eveonline-secret']    = 'The Client Secret of your registered <a href="ht
 $lang['singleService']            = 'Login with single oAuth service only (disables local logins!)';
 $lang['singleService_o_'] = 'Allow all services';
 $lang['register-on-auth'] = 'Register authenticated users even if self-registration is disabled in main configuration';
+$lang['login-button'] = 'Login Button';

@@ -1,0 +1,30 @@
+.eve-sso-login-black-small,
+.eve-sso-login-white-small,
+.eve-sso-login-black-large,
+.eve-sso-login-white-large {
+	display: inline-block;
+	background: 50% 50% no-repeat;
+	background-size: cover; /* try also: contain or 100% */
+}
+.eve-sso-login-black-large,
+.eve-sso-login-white-large {
+	width: 270px;
+	height: 45px;
+}
+.eve-sso-login-black-small,
+.eve-sso-login-white-small {
+	width: 195px;
+	height: 30px;
+}
+.eve-sso-login-black-large {
+  background-image: url('images/eve-sso-login-black-large.png');
+}
+.eve-sso-login-white-large {
+  background-image: url('images/eve-sso-login-white-large.png');
+}
+.eve-sso-login-black-small {
+  background-image: url('images/eve-sso-login-black-small.png');
+}
+.eve-sso-login-white-small {
+  background-image: url('images/eve-sso-login-white-small.png');
+}

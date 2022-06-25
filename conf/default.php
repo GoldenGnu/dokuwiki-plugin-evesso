@@ -12,3 +12,4 @@ $conf['eveonline-secret']    = '';
 $conf['mailRestriction']     = '';
 $conf['singleService']       = '';
 $conf['register-on-auth']    = 0;
+$conf['login-button']    = 'Text';

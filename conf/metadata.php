@@ -55,3 +55,11 @@ $meta['singleService']       = array('multichoice', '_caution' => 'danger',
                                          '',
                                          'EveOnline'));
 $meta['register-on-auth']    = array('onoff','_caution' => 'security');
+$meta['login-button']        = array('multichoice',
+                                     '_choices' => array(
+                                         'Text',
+                                         'Large Light Button',
+                                         'Large Dark Button',
+                                         'Small Light Button',
+                                         'Small Dark Button'
+                                         ));

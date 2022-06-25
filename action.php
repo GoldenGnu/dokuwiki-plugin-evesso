@@ -247,14 +247,25 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
         $this->insertElement($form, ++$pos, form_closefieldset());
     }
 
-    function service_html ($service){
+    function service_html($service) {
         global $ID;
         $html = '';
         $html .= '<a href="' . wl($ID, array('evessologin' => $service)) . '" class="plugin_evesso_' . $service . '">';
-        $html .= $service;
+        if ($this->getConf('login-button') == 'Button') {
+            $html .= '<div class="eve-sso-login-white-large"></div>';
+        } elseif ($this->getConf('login-button') == 'Large Light Button') {
+            $html .= '<div class="eve-sso-login-white-large"></div>';
+        } elseif ($this->getConf('login-button') == 'Large Dark Button') {
+            $html .= '<div class="eve-sso-login-black-large"></div>';
+        } elseif ($this->getConf('login-button') == 'Small Light Button') {
+            $html .= '<div class="eve-sso-login-white-small"></div>';
+        } elseif ($this->getConf('login-button') == 'Small Dark Button') {
+            $html .= '<div class="eve-sso-login-black-small"></div>';
+        } else {
+            $html .= $this->getLang('loginButton');
+        }
         $html .= '</a> ';
         return $html;
-
     }
 
     public function handle_dologin(Doku_Event &$event, $param) {
@@ -271,7 +282,7 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
 
         if ($singleService == '') return true;
 
-        $lang['btn_login'] = $this->getLang('loginButton') . $singleService;
+        $lang['btn_login'] = $this->getLang('loginButton');
 
         if($event->data != 'login') return true;
 
