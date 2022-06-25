@@ -5,11 +5,10 @@ namespace OAuth\Plugin;
 use OAuth\Common\Storage\Exception\TokenNotFoundException;
 use OAuth\Common\Storage\TokenStorageInterface;
 use OAuth\Common\Token\TokenInterface;
+use OAuth\OAuth2\Token\StdOAuth2Token;
 
 /**
- * Class oAuthHTTPClient
- *
- * Implements the client interface using DokuWiki's HTTPClient
+ * Class oAuthStorage
  */
 class oAuthStorage implements TokenStorageInterface {
 
@@ -19,7 +18,7 @@ class oAuthStorage implements TokenStorageInterface {
      * @param string $service
      * @return string
      */
-    protected function getServiceFile($service) {
+    protected function getStateFile() {
         return getCacheName(session_id(), '.oauth');
     }
 
@@ -29,8 +28,8 @@ class oAuthStorage implements TokenStorageInterface {
      * @param string $service
      * @return array
      */
-    protected function loadServiceFile($service) {
-        $file = $this->getServiceFile($service);
+    protected function loadStateFile() {
+        $file = $this->getStateFile();
         if(file_exists($file)) {
             return unserialize(io_readFile($file, false));
         } else {
@@ -39,17 +38,16 @@ class oAuthStorage implements TokenStorageInterface {
     }
 
     /**
-     * Store the data to disk
+     * Load the data from cookie
      *
      * @param string $service
-     * @param array  $data
+     * @return array
      */
-    protected function saveServiceFile($service, $data) {
-        $file = $this->getServiceFile($service);
-        if (empty($data)) {
-            @unlink($file);
+    protected function getLoadToken($service) {
+        if (isset($_SESSION[DOKU_COOKIE]['evesso-storage']['token'])) {
+            return unserialize($_SESSION[DOKU_COOKIE]['evesso-storage']['token']);
         } else {
-            io_saveFile($file, serialize($data));
+            return null;
         }
     }
 
@@ -61,11 +59,12 @@ class oAuthStorage implements TokenStorageInterface {
      * @throws TokenNotFoundException
      */
     public function retrieveAccessToken($service) {
-        $data = $this->loadServiceFile($service);
-        if(!isset($data['token'])) {
+        $token = $this->getLoadToken($service);
+        if(!isset($token)) {
+            $this->clearAuthorizationState($service);
             throw new TokenNotFoundException('No token found in storage');
         }
-        return $data['token'];
+        return $token;
     }
 
     /**
@@ -75,9 +74,7 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function storeAccessToken($service, TokenInterface $token) {
-        $data          = $this->loadServiceFile($service);
-        $data['token'] = $token;
-        $this->saveServiceFile($service, $data);
+         $_SESSION[DOKU_COOKIE]['evesso-storage']['token'] = serialize($token);
     }
 
     /**
@@ -86,8 +83,8 @@ class oAuthStorage implements TokenStorageInterface {
      * @return bool
      */
     public function hasAccessToken($service) {
-        $data = $this->loadServiceFile($service);
-        return isset($data['token']);
+        $token = $this->getLoadToken($service);
+        return isset($token);
     }
 
     /**
@@ -98,9 +95,9 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function clearToken($service) {
-        $data = $this->loadServiceFile($service);
-        if(isset($data['token'])) unset($data['token']);
-        $this->saveServiceFile($service, $data);
+        if (isset($_SESSION[DOKU_COOKIE]['evesso-storage']['token'])) {
+            unset($_SESSION[DOKU_COOKIE]['evesso-storage']['token']);
+        }
     }
 
     /**
@@ -122,9 +119,10 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function storeAuthorizationState($service, $state) {
-        $data          = $this->loadServiceFile($service);
+        $data = array();
         $data['state'] = $state;
-        $this->saveServiceFile($service, $data);
+        $file = $this->getStateFile();
+        io_saveFile($file, serialize($data));
     }
 
     /**
@@ -135,7 +133,7 @@ class oAuthStorage implements TokenStorageInterface {
      * @return bool
      */
     public function hasAuthorizationState($service) {
-        $data = $this->loadServiceFile($service);
+        $data = $this->loadStateFile();
         return isset($data['state']);
     }
 
@@ -148,7 +146,7 @@ class oAuthStorage implements TokenStorageInterface {
      * @return string
      */
     public function retrieveAuthorizationState($service) {
-        $data = $this->loadServiceFile($service);
+        $data = $this->loadStateFile();
         if(!isset($data['state'])) {
             throw new TokenNotFoundException('No state found in storage');
         }
@@ -163,9 +161,15 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function clearAuthorizationState($service) {
-        $data          = $this->loadServiceFile($service);
-        if(isset($data['state'])) unset($data['state']);
-        $this->saveServiceFile($service, $data);
+        $file = $this->getStateFile();
+        @unlink($file);
+        $file = getCacheName('oauth', '.purged');
+        //Only do this once
+        if(file_exists($file)) {
+           return; 
+        }
+        $this->clearAllAuthorizationStates();
+        io_saveFile($file, 'oauth purged');
     }
 
     /**
@@ -175,6 +179,16 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function clearAllAuthorizationStates() {
-        // TODO: Implement clearAllAuthorizationStates() method.
+        global $conf;
+        $directory = $conf['cachedir'];
+        $this->removeRecursive($directory);
+    }
+
+    function removeRecursive($directory) {
+        array_map('unlink', glob("$directory/*.oauth"));
+        foreach (glob("$directory/*", GLOB_ONLYDIR) as $dir) {
+            $this->removeRecursive($dir);
+        }
+        return true;
     }
 }
