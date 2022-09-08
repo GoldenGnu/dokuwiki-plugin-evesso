@@ -32,7 +32,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         $animal = $data->animal;
         $allAnimals = $farmer->getAllAnimals();
         if (!in_array($animal, $allAnimals)) {
-            msg('Animal ' . $animal . ' does not exist!');
+            msg('Animal ' . $animal . ' does not exist!', -1);
             return;
         }
         global $INPUT;
@@ -94,7 +94,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             }
 
             if($service->checkToken()) {
-                $ok = $this->processLogin($sticky, $service, $servicename, $page, $params);
+                $ok = $this->processLogin($sticky, $hlp, $service, $servicename, $page, $params);
                 if (!$ok) {
                     $this->cleanLogout();
                     return false;
@@ -102,7 +102,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
                 return true;
             } else {
                 if ($existingLoginProcess) {
-                    msg($this->getLang('oauth login failed'),0);
+                    msg($this->getLang('oauth login failed'), -1);
                     $this->cleanLogout();
                     return false;
                 } else {
@@ -190,9 +190,9 @@ class auth_plugin_evesso extends auth_plugin_authplain {
      *
      * @return bool
      */
-    protected function processLogin($sticky, $service, $servicename, $page, $params = array()) {
+    protected function processLogin($sticky, $hlp, $service, $servicename, $page, $params = array()) {
         $uinfo = $service->getUser();
-        $ok = $this->processUser($uinfo, $servicename);
+        $ok = $this->processUser($uinfo, $hlp, $servicename);
         if(!$ok) {
             return false;
         }
@@ -213,7 +213,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
      *
      * @return bool
      */
-    protected function processUser(&$uinfo, $servicename) {
+    protected function processUser(&$uinfo, $hlp, $servicename) {
         $uinfo['user'] = $this->cleanUser((string) $uinfo['user']);
         if(!$uinfo['name']) $uinfo['name'] = $uinfo['user'];
 
@@ -227,25 +227,43 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         if($user) {
             $sinfo = $this->getUserData($user);
             // check if the user allowed access via this service
-            if(!in_array($this->cleanGroup($servicename), $sinfo['grps'])) {
+            if(!in_array($this->cleanServiceGroup($servicename), $sinfo['grps'])) {
                 msg(sprintf($this->getLang('authnotenabled'), $servicename), -1);
                 return false;
             }
             $uinfo['user'] = $user;
             $uinfo['name'] = $sinfo['name'];
             if ($this->haveEveGroups($uinfo['grps'])) { //Update groups
+                //Remove all eve groups
                 foreach($sinfo['grps'] as $group) {
-                    if($this->startsWith($group, 'eve-')) {
+                    if($this->startsWith($group, helper_plugin_evesso::CORPORATION_PREFIX)
+                       || $this->startsWith($group, helper_plugin_evesso::ALLIANCE_PREFIX)
+                       || $this->startsWith($group, helper_plugin_evesso::FACTION_PREFIX)
+                       || $this->startsWith($group, "eve-") //Old Prefix
+                            ) {
                         $idx = array_search($group, $sinfo['grps']);
                         if($idx !== false) unset($sinfo['grps'][$idx]);
                     }
                 }
+                //Merge groups
                 $uinfo['grps'] = array_unique(array_merge((array) $uinfo['grps'], $sinfo['grps']));
-                $this->modifyUser($user, array('grps' => $uinfo['grps'])); //Update groups
             } else { //Load groups
                 $uinfo['grps'] = $sinfo['grps'];
             }
+            //Update groups
+            $this->modifyUser($user, array('grps' => $uinfo['grps']));
+            //Check group
+            if (!$hlp->checkGroups($uinfo['grps'])) {
+                msg($this->getLang("rejectedGroup"), -1);
+                return false;
+            }
         } elseif(actionOK('register') || $this->getConf('register-on-auth')) {
+            //Check group before creation
+            if (!$hlp->checkGroups($uinfo['grps'])) {
+                msg($this->getLang("rejectedGroup"), -1);
+                return false;
+            }
+            //Add user
             $ok = $this->addUser($uinfo, $servicename);
             if(!$ok) {
                 msg('something went wrong creating your user account. please try again later.', -1);
@@ -263,7 +281,11 @@ class auth_plugin_evesso extends auth_plugin_authplain {
             return false;
         }
         foreach($groups as $group) {
-            if($this->startsWith($group, 'eve-')) {
+            if($this->startsWith($group, helper_plugin_evesso::CORPORATION_PREFIX)
+                        || $this->startsWith($group, helper_plugin_evesso::ALLIANCE_PREFIX)     
+                        || $this->startsWith($group, helper_plugin_evesso::FACTION_PREFIX)
+                        || $this->startsWith($group, "eve-") //Old Prefix
+                    ) {
                 return true;
             }
         }
@@ -298,7 +320,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         $uinfo['user'] = $user;
         $groups_on_creation = array();
         $groups_on_creation[] = $conf['defaultgroup'];
-        $groups_on_creation[] = $this->cleanGroup($servicename); // add service as group
+        $groups_on_creation[] = $this->cleanServiceGroup($servicename); // add service as group
         $uinfo['grps'] = array_merge((array) $uinfo['grps'], $groups_on_creation);
 
         $ok = $this->triggerUserMod(
@@ -333,7 +355,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         foreach($this->users as $user => $uinfo) {
             if(strtolower($uinfo['mail']) == $mail) return $user;
         }
-
+         
         return false;
     }
 
@@ -349,7 +371,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         if(!is_array($data['grps'])) {
             $data['grps'] = array();
         }
-        $data['grps'][] = $this->cleanGroup($service);
+        $data['grps'][] = $this->cleanServiceGroup($service);
         $data['grps']   = array_unique($data['grps']);
 
         $USERINFO                               = $data;
@@ -453,6 +475,13 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         return $ok;
     }
 
-}
+    public function cleanServiceGroup($group) {
+        return strtolower($this->cleanGroup($group));
+    }
 
+    public function cleanGroup($group) {
+        global $conf;
+        return str_replace(':', $conf['sepchar'], $group);
+    }
+}
 // vim:ts=4:sw=4:et:

@@ -51,8 +51,47 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
             $this->restoreSessionEnvironment();
             return;
         }
-
+        $this->updateGroups();
         $this->startOAuthLogin();
+    }
+
+    public function updateGroups() {
+        global $AUTH_ACL, $ID;
+        $showMessage = false;
+        $updateACL = false;
+        foreach ($AUTH_ACL as $index => $value) { //Search
+            $acl = preg_split("/\s/", $value);
+            if ($this->startsWith($acl[1], "@eve%2d")) {
+                $showMessage = true;
+                if ($acl[2] != 0) {
+                    $updateACL = true;
+                }
+            }
+        }
+        if ($updateACL) {
+            $apa = plugin_load('admin', 'acl');
+            foreach ($AUTH_ACL as $index => $value) {
+                $acl = preg_split("/\s/", $value);
+                if ($this->startsWith($acl[1], "@eve%2d") && $acl[2] != 0) {
+                    if (method_exists($apa, "addOrUpdateACL")) {
+                        $apa->addOrUpdateACL($acl[0], rawurldecode($acl[1]), 0); //Scope, User/Group
+                    } else { //Greebo and bellow
+                        $apa->_acl_del($acl[0], rawurldecode($acl[1])); // first make sure we won't end up with 2 lines matching this user and scope.
+                        $apa->_acl_add($acl[0], rawurldecode($acl[1]), 0); //Scope, User/Group
+                    }
+                    $AUTH_ACL[$index] = $acl[0] . ' ' . $acl[1] . ' ' . '0';
+                }
+            }
+        }
+        if ($showMessage) {
+            msg('<b>EVESSO:</b><br/>'
+                    . 'The naming of eve groups was changed in this version of EVESSO.<br />'
+                    . 'Access for all the deprecated groups have been set to <code>None</code>.<br />'
+                    . 'See the <a href="https://github.com/GoldenGnu/dokuwiki-plugin-evesso#updating">readme</a> for the details on how the naming have changed.<br />'
+                    . 'Update your <a href="' . wl($ID, array('do' => 'admin', 'page' => 'acl'), true, '&') .  '">ACL</a> settings to restore access.<br />'
+                    . 'This message will remain until the deprecated groups are removed from ACL.<br />'
+                    , 2, '', '', MSG_ADMINS_ONLY);
+        }
     }
 
     private function startOAuthLogin() {
@@ -120,17 +159,13 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
 
         // get enabled and configured services
         $enabled  = $INPUT->arr('oauth_group');
-        $services = $hlp->listServices();
-        $services = array_map(array($auth, 'cleanGroup'), $services);
 
         // add all enabled services as group, remove all disabled services
-        foreach($services as $service) {
-            if(isset($enabled[$service])) {
-                $groups[] = $service;
-            } else {
-                $idx = array_search($service, $groups);
-                if($idx !== false) unset($groups[$idx]);
-            }
+        if(isset($enabled['EveOnline'])) { //Add EveOnline
+            $groups[] = 'eveonline';
+        } else { //Remove EveOnline
+            $idx = array_search('eveonline', $groups);
+            if($idx !== false) unset($groups[$idx]);
         }
         $groups = array_unique($groups);
 
@@ -161,30 +196,91 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
             return; //Continue as normal
         }
         if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
-            //Disable fields
-            $disable = array('fullname');
-            foreach ($disable as $dis) { //Disable
-                $pos = $form->findPositionByAttribute('name', $dis);
-                $form->getElementAt($pos)->attr('disabled', 'disabled');
-                $form->removeElement(++$pos);
+            //Disable fullname field
+            $pos = $form->findPositionByAttribute('name', 'fullname');
+            $form->getElementAt($pos)->attr('disabled', 'disabled');
+            //Remove all fields except username and fullname
+            $start = $form->findPositionByAttribute('name', 'fullname') + 1;
+            $done = 0;
+            while ($form->elementCount() > $start && $done < 11) {
+                $form->removeElement($start);
+                $done++;
             }
-            //Remove fields
-            $remove = array('email', 'newpass', 'passchk');
-            foreach ($remove as $dis) {
-                $pos = $form->findPositionByAttribute('name', $dis);
-                $form-> removeElement($pos);
-                $form-> removeElement($pos++);
+            $pos = $form->elementCount();
+            //Add corporation, alliance, faction fields
+            foreach ($USERINFO['grps'] as $group) {
+                if ($this->startsWith($group, helper_plugin_evesso::CORPORATION_PREFIX)) {
+                    $corp = $this->replaceFirst($group, helper_plugin_evesso::CORPORATION_PREFIX);
+                }
+                if ($this->startsWith($group, helper_plugin_evesso::ALLIANCE_PREFIX)) {
+                    $alliance = $this->replaceFirst($group, helper_plugin_evesso::ALLIANCE_PREFIX);
+                }
+                if ($this->startsWith($group, helper_plugin_evesso::FACTION_PREFIX)) {
+                    $faction = $this->replaceFirst($group, helper_plugin_evesso::FACTION_PREFIX);
+                }
             }
-            //Remove buttons
-            $remove = array('submit', 'reset');
-            foreach ($remove as $dis) {
-                $pos = $form->findPositionByAttribute('type', $dis);
-                $form-> removeElement($pos);
+            if (isset($faction)) { //str_starts_with
+                $this->insertTextInput($form, $pos, $faction, $this->getLang('faction'));
+            }
+            if (isset($alliance)) { //str_starts_with
+                $this->insertTextInput($form, $pos, $alliance, $this->getLang('alliance'));
+            }
+            if (isset($corp)) { //str_starts_with
+                $this->insertTextInput($form, $pos, $corp, $this->getLang('corporation'));
             }
         } else { //Hogfather and earlier
-             array_splice($form->_content, 3); //Remove everything except Username and Real name
-             $form->getElementAt(3)['disabled'] = 'disabled'; //Disable: Real name
+            //Remove all fields except username and fullname
+            array_splice($form->_content, 3);
+            //Disable fullname field
+            $form->getElementAt(3)['disabled'] = 'disabled';
+            //Add corporation, alliance, faction fields
+            $pos = count($form->_content);
+            foreach ($USERINFO['grps'] as $group) {
+                if ($this->startsWith($group, helper_plugin_evesso::CORPORATION_PREFIX)) {
+                    $corp = $this->replaceFirst($group, helper_plugin_evesso::CORPORATION_PREFIX);
+                }
+                if ($this->startsWith($group, helper_plugin_evesso::ALLIANCE_PREFIX)) {
+                    $alliance = $this->replaceFirst($group, helper_plugin_evesso::ALLIANCE_PREFIX);
+                }
+                if ($this->startsWith($group, helper_plugin_evesso::FACTION_PREFIX)) {
+                    $faction = $this->replaceFirst($group, helper_plugin_evesso::FACTION_PREFIX);
+                }
+            }
+            $form->insertElement($pos, form_closefieldset());
+            if (isset($faction)) { //str_starts_with
+                $form->insertElement($pos, form_makeTextField($faction, $faction, $this->getLang('faction'), '', 'block', array('disabled' => 'disabled', 'size' => '50')));
+            }
+            if (isset($alliance)) { //str_starts_with
+                $form->insertElement($pos, form_makeTextField($alliance, $alliance, $this->getLang('alliance'), '', 'block', array('disabled' => 'disabled', 'size' => '50')));
+            }
+            if (isset($corp)) { //str_starts_with
+                $form->insertElement($pos, form_makeTextField($corp, $corp, $this->getLang('corporation'), '', 'block', array('disabled' => 'disabled', 'size' => '50')));
+            }
         }
+    }
+
+    private function startsWith($haystack, $needle) {
+        $length = strlen($needle);
+        return (substr($haystack, 0, $length) === $needle);
+    }
+    
+    private function replaceFirst($haystack, $needle, $replace = '') {
+        $pos = strpos($haystack, $needle);
+        if ($pos !== false) {
+            $haystack = substr_replace($haystack, $replace, $pos, strlen($needle));
+        }
+        return $haystack;
+    }
+
+    private function insertTextInput($form, $pos, $value, $name) {
+        $textInput = $form->addTextInput($value, $name, $pos);
+        $textInput->attr('size', '50');
+        $textInput->attr('class', 'edit');
+        $textInput->attr('value', $value);
+        $textInput->attr('disabled', 'disabled');
+        $label = $textInput->getLabel();
+        $label->attr('class', 'block');
+        $form->addHTML('<br>', $pos);
     }
 
     private function insertElement($form, $pos, $out) {
@@ -204,47 +300,42 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
      * @return void
      */
     public function handle_loginform(Doku_Event &$event, $param) {
-        global $conf;
-
         /** @var helper_plugin_evesso $hlp */
         $hlp = plugin_load('helper', 'evesso');
-        $singleService = $this->getConf('singleService');
-        $enabledServices = $hlp->listServices();
+        $service = $hlp->getService();
 
         /** @var Doku_Form $form */
         $form =& $event->data;
         $html = '';
 
-        $validDomains = $hlp->getValidDomains();
-
-        if (count($validDomains) > 0) {
-            $html .= sprintf($this->getLang('eMailRestricted'), join(', ', $validDomains));
-        }
-
-        if ($singleService == '') {
-
-            foreach($hlp->listServices() as $service) {
-                $html .= $this->service_html($service);
+        if ($hlp->isEveAuth()) {  //Set Html
+            if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
+                while ($form->elementCount() > 0) {
+                    $form->removeElement(0);
+                }
+                $pos  = $form->elementCount() - 3; //At the end
+            } else { //Hogfather and earlier
+                $form->_content = array();
+                $pos  =  0;
             }
-            if(!$html) return;
-
-        }else{
-            if (in_array($singleService, $enabledServices, true) === false) {
-                msg($this->getLang('wrongConfig'),-1);
-                return;
-            }
-            $form->_content = array(); //Ignore by Igor and later
-            $html = $this->service_html($singleService);
-
+            $html = $this->service_html($service);
+        }else{ //PlainAuth and EveAuth
+            $html .= $this->service_html($service);
+            if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
+                $pos  = $form->elementCount(); //At the end
+           } else { //Hogfather and earlier
+                $pos  =  count($form->_content);
+           }
         }
         if(is_a($form, \dokuwiki\Form\Form::class)) { //Igor and later
-            $pos  = $form->elementCount(); //At the end
+            $form->addFieldsetOpen($this->getLang('loginwith'), ++$pos);
+            $form->addHtml($html, ++$pos);
+            $form->addFieldsetClose();
         } else { //Hogfather and earlier
-            $pos  =  count($form->_content);
+            $form->insertElement(++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
+            $form->insertElement(++$pos, $html);
+            $form->insertElement(++$pos, form_closefieldset());
         }
-        $this->insertElement($form, ++$pos, form_openfieldset(array('_legend' => $this->getLang('loginwith'), 'class' => 'plugin_evesso')));
-        $this->insertElement($form, ++$pos, $html);
-        $this->insertElement($form, ++$pos, form_closefieldset());
     }
 
     function service_html($service) {
@@ -253,13 +344,13 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
         $html .= '<a href="' . wl($ID, array('evessologin' => $service)) . '" class="plugin_evesso_' . $service . '">';
         if ($this->getConf('login-button') == 'Button') {
             $html .= '<div class="eve-sso-login-white-large"></div>';
-        } elseif ($this->getConf('login-button') == 'Large Light Button') {
+        } elseif ($this->getConf('login-button') == 'LargeLight') {
             $html .= '<div class="eve-sso-login-white-large"></div>';
-        } elseif ($this->getConf('login-button') == 'Large Dark Button') {
+        } elseif ($this->getConf('login-button') == 'LargeDark') {
             $html .= '<div class="eve-sso-login-black-large"></div>';
-        } elseif ($this->getConf('login-button') == 'Small Light Button') {
+        } elseif ($this->getConf('login-button') == 'SmallLight') {
             $html .= '<div class="eve-sso-login-white-small"></div>';
-        } elseif ($this->getConf('login-button') == 'Small Dark Button') {
+        } elseif ($this->getConf('login-button') == 'SmallDark') {
             $html .= '<div class="eve-sso-login-black-small"></div>';
         } else {
             $html .= $this->getLang('loginButton');
@@ -272,32 +363,23 @@ class action_plugin_evesso extends DokuWiki_Action_Plugin {
         global $lang;
         global $ID;
 
-        $singleService = $this->getConf('singleService');
-
-        if($event->data == 'logout' && $singleService != '') {
+        $hlp = plugin_load('helper', 'evesso');
+        
+        if($event->data == 'logout' && $hlp->isEveAuth()) {
             session_start();
             $_SESSION[DOKU_COOKIE]['oauth-logout'] = 'logout';
             session_write_close();
         }
 
-        if ($singleService == '') return true;
-
-        $lang['btn_login'] = $this->getLang('loginButton');
+        if ($hlp->isAuthPlain()) return true;
 
         if($event->data != 'login') return true;
 
-
-
-        /** @var helper_plugin_evesso $hlp */
-        $hlp = plugin_load('helper', 'evesso');
-        $enabledServices = $hlp->listServices();
-        if (in_array($singleService, $enabledServices, true) === false) {
-            msg($this->getLang('wrongConfig'),-1);
-            return false;
+        if($hlp->isEveAuthDirect()) {
+            $lang['btn_login'] = $this->getLang('loginButton');
+            $url = wl($ID, array('evessologin' => $hlp->getService()), true, '&');
+            send_redirect($url);
         }
-
-        $url = wl($ID, array('evessologin' => $singleService), true, '&');
-        send_redirect($url);
     }
 
 }

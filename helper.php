@@ -11,6 +11,10 @@ if(!defined('DOKU_INC')) die();
 
 class helper_plugin_evesso extends DokuWiki_Plugin {
 
+    public const CORPORATION_PREFIX = '(corporation)';
+    public const ALLIANCE_PREFIX = '(alliance)';
+    public const FACTION_PREFIX = '(faction)';
+
     /**
      * Load the needed libraries and initialize the named oAuth service
      *
@@ -18,23 +22,15 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @return null|\OAuth\Plugin\AbstractAdapter
      */
     public function loadService(&$servicename) {
-        $id = getID(); // $ID isn't set in trustExternal, yet
-
-        $servicename = preg_replace('/[^a-zA-Z0-9_]+/', '', $servicename);
         if(!$servicename) return null;
 
         require_once(__DIR__.'/phpoauthlib/src/OAuth/bootstrap.php');
         require_once(__DIR__.'/classes/AbstractAdapter.php');
         require_once(__DIR__.'/classes/oAuthHTTPClient.php');
         require_once(__DIR__.'/classes/oAuthStorage.php');
-
-        $file = __DIR__.'/classes/'.$servicename.'Adapter.php';
-        if(!file_exists($file)) return null;
-        require_once($file);
-        $class = '\\OAuth\\Plugin\\'.$servicename.'Adapter';
-
+        require_once(__DIR__.'/classes/EveOnlineAdapter.php');
         /** @var \OAuth\Plugin\AbstractAdapter $service */
-        $service = new $class($this->redirectURI());
+        $service = new \OAuth\Plugin\EveOnlineAdapter();
         if(!$service->isInitialized()) {
             msg("Failed to initialize $service authentication service. Check credentials", -1);
             return null;
@@ -42,11 +38,12 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
 
         // The generic service can be externally configured
         if(is_a($service->oAuth, 'OAuth\\OAuth2\\Service\\Generic')) {
-            $service->oAuth->setAuthorizationEndpoint($this->getAuthEndpoint($servicename));
-            $service->oAuth->setAccessTokenEndpoint($this->getTokenEndpoint($servicename));
+            $service->oAuth->setAuthorizationEndpoint($this->getAuthEndpoint());
+            $service->oAuth->setAccessTokenEndpoint($this->getTokenEndpoint());
         }
 
         return $service;
+
     }
 
     /**
@@ -54,7 +51,7 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      *
      * @return string
      */
-    public function redirectURI() {
+    public function getRedirectURI() {
         if ($this->getConf('custom-redirectURI') !== '') {
             return $this->getConf('custom-redirectURI');
         } else {
@@ -63,23 +60,24 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
     }
 
     /**
-     * List available Services
+     * Get service name
      *
-     * @param bool $enabledonly list only enabled services
-     * @return array
+     * @return string
      */
-    public function listServices($enabledonly = true) {
-        $services = array();
-        $files    = glob(__DIR__.'/classes/*Adapter.php');
+    public function getService() {
+        return 'EveOnline';
+    }
 
-        foreach($files as $file) {
-            $file = basename($file, 'Adapter.php');
-            if($file == 'Abstract') continue;
-            if($enabledonly && !$this->getKey($file)) continue;
-            $services[] = $file;
-        }
+    public function isAuthPlain() {
+        return $this->getConf('singleService') == '';
+    }
 
-        return $services;
+    public function isEveAuth() {
+        return $this->getConf('singleService') != '';
+    }
+
+    public function isEveAuthDirect() {
+        return $this->getConf('singleService') == 'EveOnline';
     }
 
     /**
@@ -88,9 +86,8 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @param $service
      * @return string
      */
-    public function getKey($service) {
-        $service = strtolower($service);
-        return $this->getConf($service.'-key');
+    public function getKey() {
+        return $this->getConf('eveonline-key');
     }
 
     /**
@@ -99,9 +96,8 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @param $service
      * @return string
      */
-    public function getSecret($service) {
-        $service = strtolower($service);
-        return $this->getConf($service.'-secret');
+    public function getSecret() {
+        return $this->getConf('eveonline-secret');
     }
 
     /**
@@ -110,9 +106,8 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @param $service
      * @return string
      */
-    public function getAuthEndpoint($service) {
-        $service = strtolower($service);
-        return $this->getConf($service.'-authurl');
+    public function getAuthEndpoint() {
+        return $this->getConf('eveonline-authurl');
     }
 
     /**
@@ -121,46 +116,62 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @param $service
      * @return string
      */
-    public function getTokenEndpoint($service) {
-        $service = strtolower($service);
-        return $this->getConf($service.'-tokenurl');
-    }
-
-    /**
-     * Return the configured User Info Endpoint URL for the given service
-     *
-     * @param $service
-     * @return string
-     */
-    public function getUserInfoEndpoint($service) {
-        $service = strtolower($service);
-        return $this->getConf($service.'-userinfourl');
+    public function getTokenEndpoint() {
+        return $this->getConf('eveonline-tokenurl');
     }
 
     /**
      * @return array
      */
-    public function getValidDomains() {
-        if ($this->getConf('mailRestriction') === '') {
+    public function getGroup($name) {
+        if ($this->getConf($name) === '') {
             return array();
         }
-        $validDomains = explode(',', trim($this->getConf('mailRestriction'), ','));
-        $validDomains = array_map('trim', $validDomains);
-        return $validDomains;
+        $validGroups = explode(',', trim($this->getConf($name), ','));
+        $validGroups = array_map('trim', $validGroups);
+        return $validGroups;
     }
 
     /**
-     * @param string $mail
+     * @param array $groups
      *
      * @return bool
      */
-    public function checkMail($mail) {
-        $hostedDomains = $this->getValidDomains();
+    public function inGroup($groups, $names, $empty = true) {
+        $validGroups = array();
+        foreach ($names as $name => $prefix) {
+            foreach ($this->getGroup($name) as $group) {
+                $validGroups[] = $prefix.$group;
+            }
+        }
 
-        foreach ($hostedDomains as $validDomain) {
-            if(substr($mail, -strlen($validDomain)) === $validDomain) {
+        if (count($validGroups) == 0) {
+            return $empty; //nothing set
+        }
+
+        foreach ($validGroups as $validGroup) {
+            if (in_array($validGroup, $groups, true)) {
                 return true;
             }
+        }
+        return false;
+    }
+    /**
+     * @param array $groups
+     *
+     * @return bool
+     */
+    public function checkGroups($groups) {
+        if (in_array('admin', $groups, true)) { //Always allow admins
+            return true;
+        }
+        $require = array(
+            'require-corporation' => helper_plugin_evesso::CORPORATION_PREFIX,
+            'require-alliance' => helper_plugin_evesso::ALLIANCE_PREFIX,
+            'require-faction' => helper_plugin_evesso::FACTION_PREFIX,
+            );
+        if ($this->inGroup($groups, $require)) {
+            return true;
         }
         return false;
     }

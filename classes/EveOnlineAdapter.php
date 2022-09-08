@@ -3,6 +3,7 @@
 namespace OAuth\Plugin;
 
 use OAuth\OAuth2\Service\EveOnline;
+use helper_plugin_evesso;
 
 /**
  * Class DoorkeeperAdapter
@@ -75,14 +76,13 @@ class EveOnlineAdapter extends AbstractAdapter {
         $names_result = json_decode($names_post, true);
 
         foreach ($names_result as $entry) {
-            $name = strtolower(str_replace(" ", "_", str_replace(".", "-", $entry['name'])));
             $category = $entry['category'];
             if ($category == 'corporation') {
-                $data['grps'][] = 'eve-corp-' . $name;
+                $data['grps'][] = helper_plugin_evesso::CORPORATION_PREFIX . $entry['name'];
             } elseif ($category == 'alliance') {
-                $data['grps'][] = 'eve-alliance-' . $name;
+                $data['grps'][] = helper_plugin_evesso::ALLIANCE_PREFIX . $entry['name'];
             } elseif ($category == 'faction') {
-                $data['grps'][] = 'eve-faction-' . $name;
+                $data['grps'][] = helper_plugin_evesso::FACTION_PREFIX . $entry['name'];
             }
         }
 

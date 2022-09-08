@@ -6,6 +6,7 @@ use OAuth\Common\Consumer\Credentials;
 use OAuth\Common\Http\Exception\TokenResponseException;
 use OAuth\Common\Storage\Exception\TokenNotFoundException;
 use OAuth\ServiceFactory;
+use OAuth\OAuth2\Token\StdOAuth2Token;
 
 /**
  * Class AbstractAdapter
@@ -30,13 +31,13 @@ abstract class AbstractAdapter {
      *
      * @param $url
      */
-    public function __construct($url) {
+    public function __construct() {
         $this->hlp = plugin_load('helper', 'evesso');
 
         $credentials = new Credentials(
-            $this->hlp->getKey($this->getAdapterName()),
-            $this->hlp->getSecret($this->getAdapterName()),
-            $url
+            $this->hlp->getKey(),
+            $this->hlp->getSecret(),
+            $this->hlp->getRedirectURI()
         );
 
         $this->storage = new oAuthStorage();
@@ -116,15 +117,6 @@ abstract class AbstractAdapter {
                 return false;
             }
         }
-
-        $validDomains = $this->hlp->getValidDomains();
-        if (count($validDomains) > 0) {
-            $userData = $this->getUser();
-            if (!$this->hlp->checkMail($userData['mail'])) {
-                msg(sprintf($this->hlp->getLang("rejectedEMail"),join(', ', $validDomains)),-1);
-                send_redirect(wl('', array('do' => 'login',),false,'&'));
-            }
-        }
         return true;
     }
 
@@ -162,7 +154,7 @@ abstract class AbstractAdapter {
     private function checkAccessToken() {
         global $conf;
         try {
-            if ($this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service())->getEndOfLife() - 90 > time()) {
+            if ($this->oAuth->getStorage()->hasAccessToken($this->oAuth->service()) && $this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service())->getEndOfLife() - 90 > time()) {
                 return true; // access_token is still vaild - already validated
             }
         } catch (TokenNotFoundException $e) {
@@ -170,8 +162,8 @@ abstract class AbstractAdapter {
             if ($conf['allowdebug']) {
                 msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
             }
-            return false; // oAuth storage have no token
         }
+        return false; // oAuth storage have no token
     }
 
     /**
@@ -183,15 +175,17 @@ abstract class AbstractAdapter {
     private function refreshAccessToken() {
         global $conf;
         try {
-            $this->oAuth->refreshAccessToken($this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service()));
-            return true;
+            if ($this->oAuth->getStorage()->hasAccessToken($this->oAuth->service())) {
+                $this->oAuth->refreshAccessToken($this->oAuth->getStorage()->retrieveAccessToken($this->oAuth->service()));
+                return true;
+            }
         } catch (TokenNotFoundException | TokenResponseException $e) {
             msg($e->getMessage(), -1);
             if ($conf['allowdebug']) {
                 msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
             }
-            return false;
         }
+        return false;
     }
 
     /**
@@ -209,7 +203,7 @@ abstract class AbstractAdapter {
     }
 
     /**
-     * Retrun the name of this Adapter
+     * Return the name of this Adapter
      *
      * It specifies which configuration setting should be used
      *

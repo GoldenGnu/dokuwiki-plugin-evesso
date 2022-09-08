@@ -16,7 +16,7 @@ class setting_plugin_evesso extends setting {
         $hlp = plugin_load('helper', 'evesso');
 
         $key   = htmlspecialchars($this->_key);
-        $value = '<code>'.$hlp->redirectURI().'</code>';
+        $value = '<code>'.$hlp->getRedirectURI().'</code>';
 
         $label = '<label for="config___'.$key.'">'.$this->prompt($plugin).'</label>';
         $input = '<div>'.$value.'</div>';
@@ -36,7 +36,7 @@ class plugin_evesso extends setting {
         $hlp = plugin_load('helper', 'evesso');
 
         $key   = htmlspecialchars($this->_key);
-        $value = '<code>'.$hlp->redirectURI().'</code>';
+        $value = '<code>'.$hlp->getRedirectURI().'</code>';
 
         $label = '<label for="config___'.$key.'">'.$this->prompt($plugin).'</label>';
         $input = '<div>'.$value.'</div>';
@@ -46,20 +46,27 @@ class plugin_evesso extends setting {
 }
 
 $meta['info']                = array('plugin_evesso');
-$meta['custom-redirectURI']  = array('string','_caution' => 'warning');
+$meta['custom-redirectURI']  = array('string','_caution' => 'danger');
 $meta['eveonline-key']       = array('string');
 $meta['eveonline-secret']    = array('string');
-$meta['mailRestriction']     = array('string','_pattern' => '!^(@[^,@]+(\.[^,@]+)+(,|$))*$!'); // https://regex101.com/r/mG4aL5/3
-$meta['singleService']       = array('multichoice', '_caution' => 'danger',
-                                     '_choices' => array(
-                                         '',
-                                         'EveOnline'));
+$meta['singleService']       = array('multichoice',
+                                    '_caution' => 'danger',
+                                    '_other' => 'never',
+                                    '_choices' => array(
+                                        '',
+                                        'EveOnlinePage',
+                                        'EveOnline',
+                                        )
+                                    );
 $meta['register-on-auth']    = array('onoff','_caution' => 'security');
+$meta['require-corporation']   = array('string', '_caution' => 'security');
+$meta['require-alliance']      = array('string', '_caution' => 'security');
+$meta['require-faction']       = array('string', '_caution' => 'security');
 $meta['login-button']        = array('multichoice',
-                                     '_choices' => array(
-                                         'Text',
-                                         'Large Light Button',
-                                         'Large Dark Button',
-                                         'Small Light Button',
-                                         'Small Dark Button'
-                                         ));
+                                    '_choices' => array(
+                                        'Text',
+                                        'LargeLight',
+                                        'LargeDark',
+                                        'SmallLight',
+                                        'SmallDark'
+                                        ));
