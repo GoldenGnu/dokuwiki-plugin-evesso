@@ -94,6 +94,7 @@ abstract class AbstractAdapter {
     public function logout() {
         if ($this->isInitialized()) {
             $this->oAuth->getStorage()->clearToken($this->oAuth->service());
+            $this->oAuth->getStorage()->clearAuthorizationState($this->oAuth->service());
         }
     }
 
@@ -134,7 +135,6 @@ abstract class AbstractAdapter {
 
         try {
             $this->oAuth->requestAccessToken($INPUT->get->str('code'), $INPUT->get->str('state', null));
-            $this->oAuth->getStorage()->clearAuthorizationState($this->oAuth->service());
             return true;
         } catch (TokenResponseException $e) {
             msg($e->getMessage(), -1);
@@ -142,6 +142,8 @@ abstract class AbstractAdapter {
                 msg('<pre>' . hsc($e->getTraceAsString()) . '</pre>', -1);
             }
             return false;
+        } finally {
+            $this->oAuth->getStorage()->clearAuthorizationState($this->oAuth->service());
         }
     }
 

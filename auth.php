@@ -396,19 +396,10 @@ class auth_plugin_evesso extends auth_plugin_authplain {
      * unset auth cookies and session information
      */
     private function cleanLogout() {
-        if(isset($_SESSION[DOKU_COOKIE]['oauth-done'])) {
-            unset($_SESSION[DOKU_COOKIE]['oauth-done']);
-        }
-        if (isset($_SESSION[DOKU_COOKIE]['auth']['oauth'])) {
-            $servicename = $_SESSION[DOKU_COOKIE]['auth']['oauth'];
-            /** @var helper_plugin_evesso $hlp */
-            $hlp = plugin_load('helper', 'evesso');
-
-            /** @var OAuth\Plugin\AbstractAdapter $service */
-            $service = $hlp->loadService($servicename);
-            if (!is_null($service)) {
-                $service->logout();
-            }
+        $hlp = plugin_load('helper', 'evesso');
+        $service = $hlp->loadService();
+        if (!is_null($service)) {
+            $service->logout();
         }
         if(isset($_SESSION[DOKU_COOKIE]['auth'])) {
             unset($_SESSION[DOKU_COOKIE]['auth']);

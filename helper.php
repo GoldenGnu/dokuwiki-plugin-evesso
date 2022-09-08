@@ -21,7 +21,7 @@ class helper_plugin_evesso extends DokuWiki_Plugin {
      * @param string $servicename
      * @return null|\OAuth\Plugin\AbstractAdapter
      */
-    public function loadService(&$servicename) {
+    public function loadService($servicename = true) {
         if(!$servicename) return null;
 
         require_once(__DIR__.'/phpoauthlib/src/OAuth/bootstrap.php');

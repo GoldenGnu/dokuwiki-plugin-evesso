@@ -95,8 +95,8 @@ class oAuthStorage implements TokenStorageInterface {
      * @return TokenStorageInterface
      */
     public function clearToken($service) {
-        if (isset($_SESSION[DOKU_COOKIE]['evesso-storage']['token'])) {
-            unset($_SESSION[DOKU_COOKIE]['evesso-storage']['token']);
+        if (isset($_SESSION[DOKU_COOKIE]['evesso-storage'])) {
+            unset($_SESSION[DOKU_COOKIE]['evesso-storage']); //Purge everything
         }
     }
 
