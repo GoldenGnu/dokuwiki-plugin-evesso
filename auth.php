@@ -37,8 +37,8 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         global $USERINFO, $INPUT;
 
         // check session for existing oAuth login data
-        $session = $_SESSION[DOKU_COOKIE]['auth'];
-        if(isset($session['oauth'])) {
+        if(isset($_SESSION[DOKU_COOKIE]['auth']['oauth'])) {
+            $session = $_SESSION[DOKU_COOKIE]['auth'];
             $servicename = $session['oauth'];
             // check if session data is still considered valid
             if ($this->isSessionValid($session)) {
@@ -53,8 +53,11 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         if(isset($_SESSION[DOKU_COOKIE]['oauth-inprogress'])) {
             $servicename = $_SESSION[DOKU_COOKIE]['oauth-inprogress']['service'];
             $page        = $_SESSION[DOKU_COOKIE]['oauth-inprogress']['id'];
-            $params      = $_SESSION[DOKU_COOKIE]['oauth-inprogress']['params'];
-
+            if (isset($_SESSION[DOKU_COOKIE]['oauth-inprogress']['params'])) {
+                $params = $_SESSION[DOKU_COOKIE]['oauth-inprogress']['params'];
+            } else {
+                $params = array();
+            }
             unset($_SESSION[DOKU_COOKIE]['oauth-inprogress']);
             $existingLoginProcess = true;
         }
@@ -94,12 +97,13 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         } elseif (isset($_COOKIE[DOKU_COOKIE])) {
             global $INPUT;
             //try cookie
-            list($cookieuser, $cookiesticky, $auth, $servicename) = explode('|', $_COOKIE[DOKU_COOKIE]);
-            $cookieuser = base64_decode($cookieuser, true);
-            $auth = base64_decode($auth, true);
-            $servicename = base64_decode($servicename, true);
-            if ($auth === 'oauth') {
-                $this->relogin($servicename);
+            $cookie = explode('|', $_COOKIE[DOKU_COOKIE]);
+            if (isset($cookie[2]) && isset($cookie[3])) {
+                $auth = base64_decode($cookie[2], true);
+                $servicename = base64_decode($cookie[3], true);
+                if ($auth === 'oauth') {
+                    $this->relogin($servicename);
+                }
             }
         }
 
@@ -354,7 +358,9 @@ class auth_plugin_evesso extends auth_plugin_authplain {
         $USERINFO                               = $data;
         $_SERVER['REMOTE_USER']                 = $data['user'];
         $_SESSION[DOKU_COOKIE]['auth']['user']  = $data['user'];
-        $_SESSION[DOKU_COOKIE]['auth']['pass']  = $data['pass'];
+        if (isset($data['pass'])) {
+            $_SESSION[DOKU_COOKIE]['auth']['pass']  = $data['pass'];
+        }
         $_SESSION[DOKU_COOKIE]['auth']['info']  = $USERINFO;
         $_SESSION[DOKU_COOKIE]['auth']['buid']  = auth_browseruid();
         $_SESSION[DOKU_COOKIE]['auth']['time']  = time();
