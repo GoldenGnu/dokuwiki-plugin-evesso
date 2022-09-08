@@ -80,7 +80,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
                 return true;
             } else {
                 if ($existingLoginProcess) {
-                    msg($this->getLang('oauth login failed'), -1);
+                    msg($this->getLang('loginFailed'), -1);
                     $this->cleanLogout();
                     return false;
                 } else {
@@ -248,7 +248,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
                 return false;
             }
         } else {
-            msg($this->getLang('addUser not possible'), -1);
+            msg($this->getLang('addUserNotPossible'), -1);
             return false;
         }
         return true;
