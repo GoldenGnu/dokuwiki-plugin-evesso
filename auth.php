@@ -239,6 +239,7 @@ class auth_plugin_evesso extends auth_plugin_authplain {
                 msg($this->getLang("rejectedGroup"), -1);
                 return false;
             }
+            return true; //Existing valid user
         } elseif(actionOK('register') || $this->getConf('register-on-auth')) {
             //Check group before creation
             if (!$hlp->checkGroups($uinfo['grps'])) {
@@ -251,11 +252,11 @@ class auth_plugin_evesso extends auth_plugin_authplain {
                 msg('something went wrong creating your user account. please try again later.', -1);
                 return false;
             }
-        } else {
-            msg($this->getLang('addUserNotPossible'), -1);
-            return false;
+            return true; //New valid user
         }
-        return true;
+        //Not existing valid user and can not create a new user
+        msg($this->getLang('addUserNotPossible'), -1);
+        return false;
     }
 
     private function haveEveGroups($groups) {
